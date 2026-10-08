@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>편의점 직원 모의 체험 학습 시뮬레이터</title>
+    <!-- Tailwind CSS 및 폰트 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+        body { font-family: 'Jua', sans-serif; user-select: none; }
+        .draggable { cursor: grab; transition: transform 0.1s; }
+        .draggable:active { cursor: grabbing; }
+        @keyframes pulse-custom {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .animate-pop { animation: pulse-custom 1.5s infinite; }
+    </style>
+</head>
+<body class="bg-sky-50 min-h-screen flex flex-col justify-between">
+
+    <!-- 상단 헤더 & 점수판 -->
+    <header class="bg-yellow-400 p-4 shadow-md flex justify-between items-center px-8">
+        <div>
+            <h1 class="text-2xl md:text-3xl text-blue-900 font-bold">🏪 편의점 친절 직원 직무 체험</h1>
+            <p class="text-gray-700 text-sm md:text-base">단계별 미션을 완료하고 멋진 편의점 왕이 되어봐요!</p>
+        </div>
+        <div class="bg-white px-4 py-2 rounded-2xl shadow border-2 border-yellow-500 text-center">
+            <span class="text-xs text-gray-500 block">내 칭찬 별점</span>
+            <span id="score-board" class="text-2xl font-bold text-amber-500">⭐ 0점</span>
+        </div>
+    </header>
+
+    <!-- 메인 컨텐츠 영역 -->
+    <main class="container mx-auto p-4 flex-grow grid grid-cols-1 lg:grid-cols-4 gap-6">
+        
+        <!-- 좌측: 직무 단계 네비게이션 -->
+        <div class="bg-white p-4 rounded-2xl shadow-md flex flex-col justify-between lg:col-span-1">
+            <div>
+                <h2 class="text-xl font-bold text-gray-800 mb-3 border-b pb-2">📋 직무 순서</h2>
+                <div class="space-y-2" id="step-indicators">
+                    <div id="ind-0" class="p-3 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-900 font-bold flex items-center gap-3">
+                        <span class="text-2xl">👋</span> 1단계: 손님 맞이
+                    </div>
+                    <div id="ind-1" class="p-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-600 font-bold flex items-center gap-3">
+                        <span class="text-2xl">🧃</span> 2단계: 물건 진열
+                    </div>
+                    <div id="ind-2" class="p-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-600 font-bold flex items-center gap-3">
+                        <span class="text-2xl">💳</span> 3단계: 바코드 계산
+                    </div>
+                    <div id="ind-3" class="p-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-600 font-bold flex items-center gap-3">
+                        <span class="text-2xl">🧹</span> 4단계: 매장 청소
+                    </div>
+                </div>
+            </div>
+            
+            <button onclick="speakInstruction()" class="mt-4 bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl text-lg shadow flex items-center justify-center gap-2">
+                <span>🔊 음성 설명 다시 듣기</span>
+            </button>
+        </div>
+
+        <!-- 우측: 인터랙티브 실습 및 시각적 애니메이션 공간 (VR/시뮬레이션 뷰포트) -->
+        <div class="bg-white p-6 rounded-2xl shadow-md flex flex-col justify-between lg:col-span-3">
+            <div>
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h2 id="stage-title" class="text-2xl font-bold text-blue-700">1단계: 손님 맞이하기</h2>
+                    <span id="mission-badge" class="bg-amber-100 text-amber-800 text-sm font-bold px-3 py-1 rounded-full">미션 진행 중 🎯</span>
+                </div>
+
+                <!-- 시뮬레이션 화면 캔버스 및 인터랙션 박스 -->
+                <div id="simulation-viewport" class="relative w-full h-80 bg-slate-900 rounded-2xl overflow-hidden shadow-inner flex flex-col items-center justify-center p-4 text-center border-4 border-slate-700">
+                    <!-- 자바스크립트로 동적 렌더링되는 가상 편의점 그래픽 영역 -->
+                </div>
+            </div>
+
+            <!-- 하단 이동 네비게이션 -->
+            <div class="flex justify-between mt-6 pt-4 border-t">
+                <button onclick="prevStage()" id="prev-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-600 font-bold py-2 px-6 rounded-xl text-lg opacity-50 cursor-not-allowed" disabled>
+                    ⬅️ 이전
+                </button>
+                <div id="next-step-guide" class="text-gray-500 font-bold flex items-center">미션을 완료하면 다음 단계로 갈 수 있어요!</div>
+                <button onclick="nextStage()" id="next-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-6 rounded-xl text-lg hidden">
+                    다음 단계 ➡️
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 푸터 -->
+    <footer class="text-center p-4 text-gray-500 text-sm">
+        초등 특수교육대상학생 맞춤형 진로·직업 기능 시뮬레이터
+    </footer>
+
+    <!-- 자바스크립트 게임 로직 -->
+    <script>
+        let currentStage = 0;
+        let score = 0;
+
+        const stages = [
+            {
+                title: "1단계: 손님 맞이하기",
+                speech: "손님이 문으로 들어왔습니다. 밝은 목소리로 인사해 볼까요? 알맞은 인사를 골라주세요.",
+                render: function() {
+                    return `
+                        <div class="text-white text-xl mb-4 animate-pop">🔔 "딩동댕~ 환영합니다!" 손님이 들어왔어요!</div>
+                        <div class="text-7xl mb-6">🧑‍🤝‍🧑</div>
+                        <p class="text-yellow-300 font-bold mb-4">어떻게 인사해야 할까요?</p>
+                        <div class="flex gap-4 justify-center">
+                            <button onclick="completeStage(10)" class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-xl text-lg shadow-lg transform hover:scale-105 transition">
+                                😊 "안녕하세요! 환영합니다!" 밝게 인사하기
+                            </button>
+                            <button onclick="wrongAction()" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-6 rounded-xl text-lg shadow-lg transform hover:scale-105 transition">
+                                😴 모른 척 엎드려 있기
+                            </button>
+                        </div>
+                    `;
+                }
+            },
+            {
+                title: "2단계: 물건 진열하기",
+                speech: "음료수 냉장고가 비어있습니다. 음료수를 드래그하거나 클릭해서 빈 냉장고 칸에 쏙 채워넣어 주세요.",
+                render: function() {
+                    return `
+                        <div class="text-white text-lg mb-2">🧊 시원한 음료수 냉장고 (진열대)</div>
+                        <p class="text-sky-300 text-sm mb-4">아래 음료수를 클릭하여 빈 냉장고 칸에 채워주세요!</p>
+                        <div class="flex justify-center items-center gap-8 bg-slate-800 p-6 rounded-xl border border-slate-600 w-full max-w-lg">
+                            <div id="shelf-slot" class="w-32 h-32 border-4 border-dashed border-sky-400 rounded-xl flex items-center justify-center text-sky-200 text-sm bg-slate-900">
+                                📥 빈 냉장고 칸
+                            </div>
+                            <div onclick="fillDrink()" class="draggable bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-bold p-4 rounded-2xl shadow cursor-pointer text-center">
+                                <div class="text-4xl mb-1">🧃</div>
+                                <div>시원한 음료수</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            },
+            {
+                title: "3단계: 바코드 찍고 계산하기",
+                speech: "손님이 가져온 삼각김밥의 바코드를 스캐너로 삑 소리가 나게 찍어주세요.",
+                render: function() {
+                    return `
+                        <div class="text-white text-lg mb-2">💳 계산대 및 바코드 스캐너</div>
+                        <p class="text-pink-300 text-sm mb-4">삼각김밥을 스캐너에 갖다 대어 '삑' 소리가 나게 하세요!</p>
+                        <div class="flex flex-col items-center gap-4 bg-slate-800 p-6 rounded-xl border border-slate-600 w-full max-w-md">
+                            <div class="text-5xl animate-bounce">🍙</div>
+                            <button onclick="scanBarcode()" id="scan-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-8 rounded-xl text-xl shadow-lg">
+                                📷 바코드 스캔하기 (삑!)
+                            </button>
+                            <div id="scan-result" class="text-green-400 font-bold hidden">🎉 "삼각김밥 1,500원입니다! 결제 완료!"</div>
+                        </div>
+                    `;
+                }
+            },
+            {
+                title: "4단계: 매장 청소하기",
+                speech: "계산대 주변에 떨어진 쓰레기와 먼지를 깨끗하게 빗자루로 청소해 볼까요?",
+                render: function() {
+                    return `
+                        <div class="text-white text-lg mb-2">🧹 계산대 청소 구역</div>
+                        <p class="text-emerald-300 text-sm mb-4">먼지나 쓰레기를 터치해서 말끔히 치워주세요!</p>
+                        <div id="cleaning-box" class="relative bg-slate-800 w-full max-w-lg h-40 rounded-xl border border-slate-600 flex items-center justify-around overflow-hidden">
+                            <div onclick="cleanDust(this)" class="cursor-pointer text-4xl animate-pulse">🗑️</div>
+                            <div onclick="cleanDust(this)" class="cursor-pointer text-4xl animate-pulse">🍂</div>
+                            <div onclick="cleanDust(this)" class="cursor-pointer text-4xl animate-pulse">💧</div>
+                        </div>
+                    `;
+                }
+            }
+        ];
+
+        let cleanedCount = 0;
+
+        function loadStage() {
+            // 좌측 인디케이터 스타일 업데이트
+            for(let i=0; i<4; i++) {
+                const ind = document.getElementById(`ind-${i}`);
+                if(i === currentStage) {
+                    ind.className = "p-3 rounded-xl border-2 border-blue-500 bg-blue-50 text-blue-900 font-bold flex items-center gap-3";
+                } else {
+                    ind.className = "p-3 rounded-xl border-2 border-gray-200 bg-gray-50 text-gray-600 font-bold flex items-center gap-3";
+                }
+            }
+
+            // 상단 타이틀 및 뷰포트 렌더링
+            document.getElementById('stage-title').innerText = stages[currentStage].title;
+            document.getElementById('simulation-viewport').innerHTML = stages[currentStage].render();
+            
+            // 버튼 상태 제어
+            document.getElementById('prev-btn').disabled = (currentStage === 0);
+            if(currentStage === 0) {
+                document.getElementById('prev-btn').classList.add('opacity-50', 'cursor-not-allowed');
+            } else {
+                document.getElementById('prev-btn').classList.remove('opacity-50', 'cursor
